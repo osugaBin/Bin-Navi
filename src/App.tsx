@@ -1028,7 +1028,7 @@ function App() {
                     取消编辑
                   </Button>
                 </>
-              ) : isAuthenticated ? (
+              ) : (
                 <>
                   <Button
                     variant='contained'
