@@ -1030,19 +1030,21 @@ function App() {
                 </>
               ) : (
                 <>
-                  <Button
-                    variant='contained'
-                    color='primary'
-                    startIcon={<AddIcon />}
-                    onClick={handleOpenAddGroup}
-                    size='small'
-                    sx={{
-                      minWidth: 'auto',
-                      fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                    }}
-                  >
-                    新增分组
-                  </Button>
+                  {isAuthenticated && (
+                    <Button
+                      variant='contained'
+                      color='primary'
+                      startIcon={<AddIcon />}
+                      onClick={handleOpenAddGroup}
+                      size='small'
+                      sx={{
+                        minWidth: 'auto',
+                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                      }}
+                    >
+                      新增分组
+                    </Button>
+                  )}
 
                   <Button
                     variant='outlined'
@@ -1087,14 +1089,12 @@ function App() {
                       </>
                     )}
                     {!isAuthenticated ? (
-                      <>
-                        <MenuItem onClick={handleOpenLoginDialog}>
-                          <ListItemIcon>
-                            <LoginIcon fontSize='small' />
-                          </ListItemIcon>
-                          <ListItemText>管理员登录</ListItemText>
-                        </MenuItem>
-                      </>
+                      <MenuItem onClick={handleOpenLoginDialog}>
+                        <ListItemIcon>
+                          <LoginIcon fontSize='small' />
+                        </ListItemIcon>
+                        <ListItemText>管理员登录</ListItemText>
+                      </MenuItem>
                     ) : (
                       <>
                         <MenuItem onClick={handleExportData}>
