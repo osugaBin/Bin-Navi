@@ -47,13 +47,16 @@ export default {
                     return new Response("数据库初始化成功", { status: 200 });
                 }
 
-                // 验证中间件 - 仅对写操作要求认证
-                const writeMethods = ["POST", "PUT", "DELETE"];
-                if (writeMethods.includes(method)) {
-                    // 检查Authorization头部
+                // 需要认证的操作（写操作）
+                const writeMethods = ['POST', 'PUT', 'DELETE'];
+                const needsAuth = writeMethods.includes(method) &&
+                    !path.startsWith('configs/') && // configs的写操作需要认证
+                    path !== 'import'; // import操作需要认证
+
+                // 检查是否为需要认证的写操作
+                if (needsAuth || (method !== 'GET' && path.startsWith('configs/'))) {
                     const authHeader = request.headers.get("Authorization");
 
-                    // 如果没有Authorization头部，返回401错误
                     if (!authHeader) {
                         return new Response("请先登录", {
                             status: 401,
@@ -63,20 +66,19 @@ export default {
                         });
                     }
 
-                    // 提取Token
                     const [authType, token] = authHeader.split(" ");
 
-                    // 验证Token类型和内容
                     if (authType !== "Bearer" || !token) {
                         return new Response("无效的认证信息", { status: 401 });
                     }
 
-                    // 验证Token有效性
                     const verifyResult = await api.verifyToken(token);
                     if (!verifyResult.valid) {
                         return new Response("认证已过期或无效，请重新登录", { status: 401 });
                     }
                 }
+
+                // GET请求和公开接口无需认证，直接处理
 
                 // 路由匹配
                 if (path === "groups" && method === "GET") {

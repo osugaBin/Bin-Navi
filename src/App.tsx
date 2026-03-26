@@ -65,7 +65,6 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-import LoginIcon from '@mui/icons-material/Login';
 
 // 根据环境选择使用真实API还是模拟API
 const isDevEnvironment = import.meta.env.DEV;
@@ -147,6 +146,7 @@ function App() {
 
   // 新增认证状态
   const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [isAuthRequired, setIsAuthRequired] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
@@ -206,9 +206,6 @@ function App() {
   const [importResultOpen, setImportResultOpen] = useState(false);
   const [importResultMessage, setImportResultMessage] = useState('');
 
-  // 管理员登录对话框状态
-  const [openLoginDialog, setOpenLoginDialog] = useState(false);
-
   // 菜单打开关闭
   const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
     setMenuAnchorEl(event.currentTarget);
@@ -218,45 +215,37 @@ function App() {
     setMenuAnchorEl(null);
   };
 
-  const handleOpenLoginDialog = () => {
-    handleMenuClose();
-    setOpenLoginDialog(true);
-  };
-
-  const handleCloseLoginDialog = () => {
-    setOpenLoginDialog(false);
-  };
-
-  // 检查认证状态 - 先验证token再加载数据
+  // 检查认证状态
   const checkAuthStatus = async () => {
     try {
       setIsAuthChecking(true);
       console.log('开始检查认证状态...');
 
-      // 先检查是否有token，并验证其有效性
-      let authenticated = false;
-      if (api.isLoggedIn()) {
-        const result = await api.checkAuthStatus();
-        console.log('认证检查结果:', result);
-        if (result) {
-          authenticated = true;
-          console.log('已认证');
-        } else {
-          api.logout();
-          console.log('token无效，已清除');
-        }
-      } else {
-        console.log('未登录');
-      }
-      setIsAuthenticated(authenticated);
-
-      // 加载数据（GET请求在AUTH关闭时无需认证）
+      // 先尝试加载数据（游客模式）
       await fetchData();
       await fetchConfigs();
+
+      // 检查本地是否有token
+      if (api.isLoggedIn()) {
+        // 有token，设置已认证
+        console.log('已登录，开始加载数据');
+        setIsAuthenticated(true);
+        setIsAuthRequired(false);
+      } else {
+        // 无token，游客模式也可以浏览
+        console.log('游客模式，直接加载数据');
+        setIsAuthenticated(false);
+        setIsAuthRequired(false); // 不强制要求登录
+      }
     } catch (error) {
       console.error('认证检查失败:', error);
-      // 出错时不阻止访问（guest模式）
-      setIsAuthenticated(false);
+      // 如果返回401，说明token无效，清除它
+      if (error instanceof Error && error.message.includes('认证')) {
+        console.log('检测到认证错误，清除token');
+        api.logout();
+        setIsAuthenticated(false);
+        setIsAuthRequired(false); // 游客仍可浏览
+      }
     } finally {
       console.log('认证检查完成');
       setIsAuthChecking(false);
@@ -275,30 +264,37 @@ function App() {
       if (success) {
         // 登录成功
         setIsAuthenticated(true);
-        handleCloseLoginDialog();
-        setSnackbarMessage('管理员登录成功');
-        setSnackbarOpen(true);
+        setIsAuthRequired(false);
+        // 加载数据
+        await fetchData();
+        await fetchConfigs();
       } else {
         // 登录失败
-        setLoginError('用户名或密码错误');
+        handleError('用户名或密码错误');
         setIsAuthenticated(false);
       }
     } catch (error) {
       console.error('登录失败:', error);
-      setLoginError('登录失败: ' + (error instanceof Error ? error.message : '未知错误'));
+      handleError('登录失败: ' + (error instanceof Error ? error.message : '未知错误'));
       setIsAuthenticated(false);
     } finally {
       setLoginLoading(false);
     }
   };
 
-  // 登出功能 - 清除admin身份但保留访问
+  // 登出功能
   const handleLogout = () => {
     api.logout();
     setIsAuthenticated(false);
+    setIsAuthRequired(false); // 游客仍可浏览
+
+    // 清空数据并重新加载（游客数据）
+    fetchData();
+    fetchConfigs();
     handleMenuClose();
-    setSnackbarMessage('已退出管理员模式');
-    setSnackbarOpen(true);
+
+    // 显示提示信息
+    setError('已退出登录');
   };
 
   // 加载配置
@@ -428,7 +424,11 @@ function App() {
       }
     } catch (error) {
       console.error('更新站点失败:', error);
-      handleError('更新站点失败: ' + (error as Error).message);
+      if (error instanceof Error && error.message.includes('认证')) {
+        handleError('请先登录后再操作');
+      } else {
+        handleError('更新站点失败: ' + (error as Error).message);
+      }
     }
   };
 
@@ -439,7 +439,11 @@ function App() {
       await fetchData(); // 重新加载数据
     } catch (error) {
       console.error('删除站点失败:', error);
-      handleError('删除站点失败: ' + (error as Error).message);
+      if (error instanceof Error && error.message.includes('认证')) {
+        handleError('请先登录后再操作');
+      } else {
+        handleError('删除站点失败: ' + (error as Error).message);
+      }
     }
   };
 
@@ -468,7 +472,11 @@ function App() {
       setCurrentSortingGroupId(null);
     } catch (error) {
       console.error('更新分组排序失败:', error);
-      handleError('更新分组排序失败: ' + (error as Error).message);
+      if (error instanceof Error && error.message.includes('认证')) {
+        handleError('请先登录后再操作');
+      } else {
+        handleError('更新分组排序失败: ' + (error as Error).message);
+      }
     }
   };
 
@@ -498,7 +506,11 @@ function App() {
       setCurrentSortingGroupId(null);
     } catch (error) {
       console.error('更新站点排序失败:', error);
-      handleError('更新站点排序失败: ' + (error as Error).message);
+      if (error instanceof Error && error.message.includes('认证')) {
+        handleError('请先登录后再操作');
+      } else {
+        handleError('更新站点排序失败: ' + (error as Error).message);
+      }
     }
   };
 
@@ -568,7 +580,11 @@ function App() {
       setNewGroup({ name: '', order_num: 0 }); // 重置表单
     } catch (error) {
       console.error('创建分组失败:', error);
-      handleError('创建分组失败: ' + (error as Error).message);
+      if (error instanceof Error && error.message.includes('认证')) {
+        handleError('请先登录后再操作');
+      } else {
+        handleError('创建分组失败: ' + (error as Error).message);
+      }
     }
   };
 
@@ -615,7 +631,11 @@ function App() {
       handleCloseAddSite();
     } catch (error) {
       console.error('创建站点失败:', error);
-      handleError('创建站点失败: ' + (error as Error).message);
+      if (error instanceof Error && error.message.includes('认证')) {
+        handleError('请先登录后再操作');
+      } else {
+        handleError('创建站点失败: ' + (error as Error).message);
+      }
     }
   };
 
@@ -650,7 +670,11 @@ function App() {
       handleCloseConfig();
     } catch (error) {
       console.error('保存配置失败:', error);
-      handleError('保存配置失败: ' + (error as Error).message);
+      if (error instanceof Error && error.message.includes('认证')) {
+        handleError('请先登录后再操作');
+      } else {
+        handleError('保存配置失败: ' + (error as Error).message);
+      }
     }
   };
 
@@ -781,7 +805,11 @@ function App() {
           handleCloseImport();
         } catch (error) {
           console.error('解析导入数据失败:', error);
-          handleError('解析导入数据失败: ' + (error instanceof Error ? error.message : '未知错误'));
+          if (error instanceof Error && error.message.includes('认证')) {
+            handleError('请先登录后再操作');
+          } else {
+            handleError('解析导入数据失败: ' + (error instanceof Error ? error.message : '未知错误'));
+          }
         } finally {
           setImportLoading(false);
         }
@@ -793,10 +821,31 @@ function App() {
       };
     } catch (error) {
       console.error('导入数据失败:', error);
-      handleError('导入数据失败: ' + (error instanceof Error ? error.message : '未知错误'));
+      if (error instanceof Error && error.message.includes('认证')) {
+        handleError('请先登录后再操作');
+      } else {
+        handleError('导入数据失败: ' + (error instanceof Error ? error.message : '未知错误'));
+      }
     } finally {
       setImportLoading(false);
     }
+  };
+
+  // 渲染登录页面
+  const renderLoginForm = () => {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'background.default',
+        }}
+      >
+        <LoginForm onLogin={handleLogin} loading={loginLoading} error={loginError} />
+      </Box>
+    );
   };
 
   // 如果正在检查认证状态，显示加载界面
@@ -819,6 +868,16 @@ function App() {
     );
   }
 
+  // 如果需要认证但未认证，显示登录界面
+  if (isAuthRequired && !isAuthenticated) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        {renderLoginForm()}
+      </ThemeProvider>
+    );
+  }
+
   // 更新分组
   const handleGroupUpdate = async (updatedGroup: Group) => {
     try {
@@ -828,7 +887,11 @@ function App() {
       }
     } catch (error) {
       console.error('更新分组失败:', error);
-      handleError('更新分组失败: ' + (error as Error).message);
+      if (error instanceof Error && error.message.includes('认证')) {
+        handleError('请先登录后再操作');
+      } else {
+        handleError('更新分组失败: ' + (error as Error).message);
+      }
     }
   };
 
@@ -839,7 +902,11 @@ function App() {
       await fetchData(); // 重新加载数据
     } catch (error) {
       console.error('删除分组失败:', error);
-      handleError('删除分组失败: ' + (error as Error).message);
+      if (error instanceof Error && error.message.includes('认证')) {
+        handleError('请先登录后再操作');
+      } else {
+        handleError('删除分组失败: ' + (error as Error).message);
+      }
     }
   };
 
@@ -1005,7 +1072,7 @@ function App() {
                     取消编辑
                   </Button>
                 </>
-              ) : isAuthenticated && (
+              ) : (
                 <>
                   <Button
                     variant='contained'
@@ -1071,51 +1138,19 @@ function App() {
                       </ListItemIcon>
                       <ListItemText>导入数据</ListItemText>
                     </MenuItem>
-                    <Divider />
-                    <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
-                      <ListItemIcon sx={{ color: 'error.main' }}>
-                        <LogoutIcon fontSize='small' />
-                      </ListItemIcon>
-                      <ListItemText>退出登录</ListItemText>
-                    </MenuItem>
+                    {isAuthenticated && (
+                      <>
+                        <Divider />
+                        <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+                          <ListItemIcon sx={{ color: 'error.main' }}>
+                            <LogoutIcon fontSize='small' />
+                          </ListItemIcon>
+                          <ListItemText>退出登录</ListItemText>
+                        </MenuItem>
+                      </>
+                    )}
                   </Menu>
                 </>
-              )}
-              {!isAuthenticated && !sortMode && (
-                <Button
-                  variant='outlined'
-                  color='primary'
-                  startIcon={<MenuIcon />}
-                  onClick={handleMenuOpen}
-                  aria-controls={openMenu ? 'navigation-menu' : undefined}
-                  aria-haspopup='true'
-                  aria-expanded={openMenu ? 'true' : undefined}
-                  size='small'
-                  sx={{
-                    minWidth: 'auto',
-                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                  }}
-                >
-                  更多选项
-                </Button>
-              )}
-              {!isAuthenticated && !sortMode && (
-                <Menu
-                  id='navigation-menu'
-                  anchorEl={menuAnchorEl}
-                  open={openMenu}
-                  onClose={handleMenuClose}
-                  MenuListProps={{
-                    'aria-labelledby': 'navigation-button',
-                  }}
-                >
-                  <MenuItem onClick={handleOpenLoginDialog}>
-                    <ListItemIcon>
-                      <LoginIcon fontSize='small' />
-                    </ListItemIcon>
-                    <ListItemText>管理员登录</ListItemText>
-                  </MenuItem>
-                </Menu>
               )}
               <ThemeToggle darkMode={darkMode} onToggle={toggleTheme} />
             </Stack>
@@ -1173,13 +1208,13 @@ function App() {
                       group={group}
                       sortMode={sortMode === SortMode.None ? 'None' : 'SiteSort'}
                       currentSortingGroupId={currentSortingGroupId}
-                      onUpdate={isAuthenticated ? handleSiteUpdate : undefined}
-                      onDelete={isAuthenticated ? handleSiteDelete : undefined}
+                      onUpdate={handleSiteUpdate}
+                      onDelete={handleSiteDelete}
                       onSaveSiteOrder={handleSaveSiteOrder}
                       onStartSiteSort={startSiteSort}
-                      onAddSite={isAuthenticated ? handleOpenAddSite : undefined}
-                      onUpdateGroup={isAuthenticated ? handleGroupUpdate : undefined}
-                      onDeleteGroup={isAuthenticated ? handleGroupDelete : undefined}
+                      onAddSite={handleOpenAddSite}
+                      onUpdateGroup={handleGroupUpdate}
+                      onDeleteGroup={handleGroupDelete}
                       configs={configs}
                     />
                   ))}
@@ -1598,38 +1633,6 @@ function App() {
                 {importLoading ? '导入中...' : '导入'}
               </Button>
             </DialogActions>
-          </Dialog>
-
-          {/* 管理员登录对话框 */}
-          <Dialog
-            open={openLoginDialog}
-            onClose={handleCloseLoginDialog}
-            maxWidth='xs'
-            fullWidth
-            PaperProps={{
-              sx: {
-                m: { xs: 2, sm: 'auto' },
-                width: { xs: 'calc(100% - 32px)', sm: 'auto' },
-              },
-            }}
-          >
-            <DialogTitle>
-              管理员登录
-              <IconButton
-                aria-label='close'
-                onClick={handleCloseLoginDialog}
-                sx={{
-                  position: 'absolute',
-                  right: 8,
-                  top: 8,
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </DialogTitle>
-            <DialogContent>
-              <LoginForm onLogin={handleLogin} loading={loginLoading} error={loginError} showHeader={false} />
-            </DialogContent>
           </Dialog>
 
           {/* GitHub角标 - 在移动端调整位置 */}

@@ -43,8 +43,8 @@ interface GroupCardProps {
   index?: number; // 用于Draggable的索引，仅在分组排序模式下需要
   sortMode: 'None' | 'GroupSort' | 'SiteSort';
   currentSortingGroupId: number | null;
-  onUpdate?: (updatedSite: Site) => void;
-  onDelete?: (siteId: number) => void;
+  onUpdate: (updatedSite: Site) => void;
+  onDelete: (siteId: number) => void;
   onSaveSiteOrder: (groupId: number, sites: Site[]) => void;
   onStartSiteSort: (groupId: number) => void;
   onAddSite?: (groupId: number) => void; // 新增添加卡片的可选回调函数

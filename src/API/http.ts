@@ -157,15 +157,6 @@ export class NavigationAPI {
 
   // 验证用户登录
   async login(loginRequest: LoginRequest): Promise<LoginResponse> {
-    // 如果未启用身份验证，直接返回成功
-    if (!this.authEnabled) {
-      return {
-        success: true,
-        token: await this.generateToken({ username: 'guest' }, false),
-        message: '身份验证未启用，默认登录成功',
-      };
-    }
-
     // 验证用户名和密码
     if (loginRequest.username === this.username && loginRequest.password === this.password) {
       // 生成JWT令牌，传递记住我参数
@@ -188,10 +179,6 @@ export class NavigationAPI {
 
   // 验证令牌有效性
   async verifyToken(token: string): Promise<{ valid: boolean; payload?: Record<string, unknown> }> {
-    if (!this.authEnabled) {
-      return { valid: true, payload: { username: 'guest' } };
-    }
-
     try {
       // 解析JWT
       const [header, payload, signature] = token.split('.');

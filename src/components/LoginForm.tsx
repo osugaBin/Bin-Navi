@@ -16,10 +16,9 @@ interface LoginFormProps {
   onLogin: (username: string, password: string, rememberMe: boolean) => void;
   loading?: boolean;
   error?: string | null;
-  showHeader?: boolean;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false, error = null, showHeader = true }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false, error = null }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -37,56 +36,52 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false, error =
         alignItems: 'center',
         width: '100%',
         maxWidth: '100%',
-        p: { xs: 2, sm: showHeader ? 4 : 2 },
+        p: { xs: 2, sm: 4 },
       }}
     >
       <Paper
-        elevation={showHeader ? 3 : 0}
+        elevation={3}
         sx={{
-          p: { xs: 2, sm: showHeader ? 4 : 2 },
+          p: { xs: 3, sm: 4 },
           borderRadius: 2,
           width: '100%',
           maxWidth: { xs: '90%', sm: 400 },
-          backgroundColor: showHeader ? (theme) =>
-            theme.palette.mode === 'dark' ? 'rgba(33, 33, 33, 0.9)' : 'rgba(255, 255, 255, 0.9)'
-            : 'transparent',
-          backdropFilter: showHeader ? 'blur(10px)' : 'none',
-          boxShadow: showHeader ? (theme) =>
+          backgroundColor: (theme) =>
+            theme.palette.mode === 'dark' ? 'rgba(33, 33, 33, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(10px)',
+          boxShadow: (theme) =>
             theme.palette.mode === 'dark'
               ? '0 8px 32px rgba(0, 0, 0, 0.3)'
-              : '0 8px 32px rgba(0, 0, 0, 0.1)'
-            : 'none',
+              : '0 8px 32px rgba(0, 0, 0, 0.1)',
         }}
       >
-        {showHeader && (
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            mb: 3,
+          }}
+        >
           <Box
             sx={{
+              mb: 2,
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
               display: 'flex',
-              flexDirection: 'column',
+              justifyContent: 'center',
               alignItems: 'center',
-              mb: 3,
+              backgroundColor: 'primary.main',
+              color: 'white',
             }}
           >
-            <Box
-              sx={{
-                mb: 2,
-                width: 56,
-                height: 56,
-                borderRadius: '50%',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: 'primary.main',
-                color: 'white',
-              }}
-            >
-              <LockOutlinedIcon fontSize='large' />
-            </Box>
-            <Typography component='h1' variant='h5' fontWeight='bold' textAlign='center'>
-              导航站登录
-            </Typography>
+            <LockOutlinedIcon fontSize='large' />
           </Box>
-        )}
+          <Typography component='h1' variant='h5' fontWeight='bold' textAlign='center'>
+            导航站登录
+          </Typography>
+        </Box>
 
         {error && (
           <Alert severity='error' sx={{ mb: 3 }}>
