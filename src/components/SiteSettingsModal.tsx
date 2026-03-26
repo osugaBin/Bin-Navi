@@ -31,8 +31,8 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 
 interface SiteSettingsModalProps {
   site: Site;
-  onUpdate: (updatedSite: Site) => void;
-  onDelete: (siteId: number) => void;
+  onUpdate?: (updatedSite: Site) => void;
+  onDelete?: (siteId: number) => void;
   onClose: () => void;
   groups?: Group[]; // 可选的分组列表
   iconApi?: string; // 图标API配置
@@ -134,11 +134,13 @@ export default function SiteSettingsModal({
     e.stopPropagation();
 
     // 更新网站信息，将group_id转为数字
-    onUpdate({
-      ...site,
-      ...formData,
-      group_id: Number(formData.group_id),
-    });
+    if (onUpdate) {
+      onUpdate({
+        ...site,
+        ...formData,
+        group_id: Number(formData.group_id),
+      });
+    }
 
     onClose();
   };
@@ -147,7 +149,9 @@ export default function SiteSettingsModal({
   const confirmDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm('确定要删除这个网站吗？此操作不可恢复。')) {
-      onDelete(site.id!);
+      if (onDelete) {
+        onDelete(site.id!);
+      }
       onClose();
     }
   };

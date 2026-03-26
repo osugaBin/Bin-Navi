@@ -799,23 +799,6 @@ function App() {
     }
   };
 
-  // 渲染登录页面
-  const renderLoginForm = () => {
-    return (
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          bgcolor: 'background.default',
-        }}
-      >
-        <LoginForm onLogin={handleLogin} loading={loginLoading} error={loginError} />
-      </Box>
-    );
-  };
-
   // 如果正在检查认证状态，显示加载界面
   if (isAuthChecking) {
     return (
