@@ -20,8 +20,8 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 
 interface SiteCardProps {
   site: Site;
-  onUpdate: (updatedSite: Site) => void;
-  onDelete: (siteId: number) => void;
+  onUpdate?: (updatedSite: Site) => void;
+  onDelete?: (siteId: number) => void;
   isEditMode?: boolean;
   index?: number;
   iconApi?: string; // 添加iconApi属性

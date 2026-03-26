@@ -414,12 +414,6 @@ function App() {
     } catch (error) {
       console.error('加载数据失败:', error);
       handleError('加载数据失败: ' + (error instanceof Error ? error.message : '未知错误'));
-
-      // 如果因为认证问题导致加载失败，处理认证状态
-      if (error instanceof Error && error.message.includes('认证')) {
-        setIsAuthRequired(true);
-        setIsAuthenticated(false);
-      }
     } finally {
       setLoading(false);
     }
@@ -1028,7 +1022,7 @@ function App() {
                     取消编辑
                   </Button>
                 </>
-              ) : isAuthenticated ? (
+              ) : isAuthenticated && (
                 <>
                   <Button
                     variant='contained'
@@ -1069,57 +1063,76 @@ function App() {
                       'aria-labelledby': 'navigation-button',
                     }}
                   >
-                    {isAuthenticated && (
-                      <>
-                        <MenuItem onClick={startGroupSort}>
-                          <ListItemIcon>
-                            <SortIcon fontSize='small' />
-                          </ListItemIcon>
-                          <ListItemText>编辑排序</ListItemText>
-                        </MenuItem>
-                        <MenuItem onClick={handleOpenConfig}>
-                          <ListItemIcon>
-                            <SettingsIcon fontSize='small' />
-                          </ListItemIcon>
-                          <ListItemText>网站设置</ListItemText>
-                        </MenuItem>
-                        <Divider />
-                      </>
-                    )}
-                    {!isAuthenticated ? (
-                      <>
-                        <MenuItem onClick={handleOpenLoginDialog}>
-                          <ListItemIcon>
-                            <LoginIcon fontSize='small' />
-                          </ListItemIcon>
-                          <ListItemText>管理员登录</ListItemText>
-                        </MenuItem>
-                      </>
-                    ) : (
-                      <>
-                        <MenuItem onClick={handleExportData}>
-                          <ListItemIcon>
-                            <FileDownloadIcon fontSize='small' />
-                          </ListItemIcon>
-                          <ListItemText>导出数据</ListItemText>
-                        </MenuItem>
-                        <MenuItem onClick={handleOpenImport}>
-                          <ListItemIcon>
-                            <FileUploadIcon fontSize='small' />
-                          </ListItemIcon>
-                          <ListItemText>导入数据</ListItemText>
-                        </MenuItem>
-                        <Divider />
-                        <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
-                          <ListItemIcon sx={{ color: 'error.main' }}>
-                            <LogoutIcon fontSize='small' />
-                          </ListItemIcon>
-                          <ListItemText>退出登录</ListItemText>
-                        </MenuItem>
-                      </>
-                    )}
+                    <MenuItem onClick={startGroupSort}>
+                      <ListItemIcon>
+                        <SortIcon fontSize='small' />
+                      </ListItemIcon>
+                      <ListItemText>编辑排序</ListItemText>
+                    </MenuItem>
+                    <MenuItem onClick={handleOpenConfig}>
+                      <ListItemIcon>
+                        <SettingsIcon fontSize='small' />
+                      </ListItemIcon>
+                      <ListItemText>网站设置</ListItemText>
+                    </MenuItem>
+                    <Divider />
+                    <MenuItem onClick={handleExportData}>
+                      <ListItemIcon>
+                        <FileDownloadIcon fontSize='small' />
+                      </ListItemIcon>
+                      <ListItemText>导出数据</ListItemText>
+                    </MenuItem>
+                    <MenuItem onClick={handleOpenImport}>
+                      <ListItemIcon>
+                        <FileUploadIcon fontSize='small' />
+                      </ListItemIcon>
+                      <ListItemText>导入数据</ListItemText>
+                    </MenuItem>
+                    <Divider />
+                    <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+                      <ListItemIcon sx={{ color: 'error.main' }}>
+                        <LogoutIcon fontSize='small' />
+                      </ListItemIcon>
+                      <ListItemText>退出登录</ListItemText>
+                    </MenuItem>
                   </Menu>
                 </>
+              )}
+              {!isAuthenticated && !sortMode && (
+                <Button
+                  variant='outlined'
+                  color='primary'
+                  startIcon={<MenuIcon />}
+                  onClick={handleMenuOpen}
+                  aria-controls={openMenu ? 'navigation-menu' : undefined}
+                  aria-haspopup='true'
+                  aria-expanded={openMenu ? 'true' : undefined}
+                  size='small'
+                  sx={{
+                    minWidth: 'auto',
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  }}
+                >
+                  更多选项
+                </Button>
+              )}
+              {!isAuthenticated && !sortMode && (
+                <Menu
+                  id='navigation-menu'
+                  anchorEl={menuAnchorEl}
+                  open={openMenu}
+                  onClose={handleMenuClose}
+                  MenuListProps={{
+                    'aria-labelledby': 'navigation-button',
+                  }}
+                >
+                  <MenuItem onClick={handleOpenLoginDialog}>
+                    <ListItemIcon>
+                      <LoginIcon fontSize='small' />
+                    </ListItemIcon>
+                    <ListItemText>管理员登录</ListItemText>
+                  </MenuItem>
+                </Menu>
               )}
               <ThemeToggle darkMode={darkMode} onToggle={toggleTheme} />
             </Stack>
