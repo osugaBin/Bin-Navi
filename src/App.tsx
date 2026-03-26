@@ -65,6 +65,7 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import LoginIcon from '@mui/icons-material/Login';
 
 // 根据环境选择使用真实API还是模拟API
 const isDevEnvironment = import.meta.env.DEV;
@@ -150,6 +151,7 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
 
   // 配置状态
   const [configs, setConfigs] = useState<Record<string, string>>(DEFAULT_CONFIGS);
@@ -265,6 +267,7 @@ function App() {
         // 登录成功
         setIsAuthenticated(true);
         setIsAuthRequired(false);
+        closeLoginDialog();
         // 加载数据
         await fetchData();
         await fetchConfigs();
@@ -295,6 +298,28 @@ function App() {
 
     // 显示提示信息
     setError('已退出登录');
+  };
+
+  // 打开登录对话框
+  const openLoginDialog = () => {
+    setLoginDialogOpen(true);
+    setLoginError(null);
+    handleMenuClose();
+  };
+
+  // 关闭登录对话框
+  const closeLoginDialog = () => {
+    setLoginDialogOpen(false);
+    setLoginError(null);
+  };
+
+  // 需要认证的操作包装函数
+  const requireAuth = (action: () => void) => {
+    if (isAuthenticated) {
+      action();
+    } else {
+      openLoginDialog();
+    }
   };
 
   // 加载配置
@@ -417,6 +442,10 @@ function App() {
 
   // 更新站点
   const handleSiteUpdate = async (updatedSite: Site) => {
+    if (!isAuthenticated) {
+      openLoginDialog();
+      return;
+    }
     try {
       if (updatedSite.id) {
         await api.updateSite(updatedSite.id, updatedSite);
@@ -434,6 +463,10 @@ function App() {
 
   // 删除站点
   const handleSiteDelete = async (siteId: number) => {
+    if (!isAuthenticated) {
+      openLoginDialog();
+      return;
+    }
     try {
       await api.deleteSite(siteId);
       await fetchData(); // 重新加载数据
@@ -449,6 +482,10 @@ function App() {
 
   // 保存分组排序
   const handleSaveGroupOrder = async () => {
+    if (!isAuthenticated) {
+      openLoginDialog();
+      return;
+    }
     try {
       console.log('保存分组顺序', groups);
       // 构造需要更新的分组顺序数据
@@ -482,6 +519,10 @@ function App() {
 
   // 保存站点排序
   const handleSaveSiteOrder = async (groupId: number, sites: Site[]) => {
+    if (!isAuthenticated) {
+      openLoginDialog();
+      return;
+    }
     try {
       console.log('保存站点排序', groupId, sites);
 
@@ -516,6 +557,10 @@ function App() {
 
   // 启动分组排序
   const startGroupSort = () => {
+    if (!isAuthenticated) {
+      openLoginDialog();
+      return;
+    }
     console.log('开始分组排序');
     setSortMode(SortMode.GroupSort);
     setCurrentSortingGroupId(null);
@@ -523,6 +568,10 @@ function App() {
 
   // 启动站点排序
   const startSiteSort = (groupId: number) => {
+    if (!isAuthenticated) {
+      openLoginDialog();
+      return;
+    }
     console.log('开始站点排序');
     setSortMode(SortMode.SiteSort);
     setCurrentSortingGroupId(groupId);
@@ -568,6 +617,10 @@ function App() {
   };
 
   const handleCreateGroup = async () => {
+    if (!isAuthenticated) {
+      openLoginDialog();
+      return;
+    }
     try {
       if (!newGroup.name) {
         handleError('分组名称不能为空');
@@ -590,6 +643,10 @@ function App() {
 
   // 新增站点相关函数
   const handleOpenAddSite = (groupId: number) => {
+    if (!isAuthenticated) {
+      openLoginDialog();
+      return;
+    }
     const group = groups.find((g) => g.id === groupId);
     const maxOrderNum = group?.sites.length
       ? Math.max(...group.sites.map((s) => s.order_num)) + 1
@@ -620,6 +677,10 @@ function App() {
   };
 
   const handleCreateSite = async () => {
+    if (!isAuthenticated) {
+      openLoginDialog();
+      return;
+    }
     try {
       if (!newSite.name || !newSite.url) {
         handleError('站点名称和URL不能为空');
@@ -641,6 +702,10 @@ function App() {
 
   // 配置相关函数
   const handleOpenConfig = () => {
+    if (!isAuthenticated) {
+      openLoginDialog();
+      return;
+    }
     setTempConfigs({ ...configs });
     setOpenConfig(true);
   };
@@ -657,6 +722,10 @@ function App() {
   };
 
   const handleSaveConfig = async () => {
+    if (!isAuthenticated) {
+      openLoginDialog();
+      return;
+    }
     try {
       // 保存所有配置
       for (const [key, value] of Object.entries(tempConfigs)) {
@@ -880,6 +949,10 @@ function App() {
 
   // 更新分组
   const handleGroupUpdate = async (updatedGroup: Group) => {
+    if (!isAuthenticated) {
+      openLoginDialog();
+      return;
+    }
     try {
       if (updatedGroup.id) {
         await api.updateGroup(updatedGroup.id, updatedGroup);
@@ -897,6 +970,10 @@ function App() {
 
   // 删除分组
   const handleGroupDelete = async (groupId: number) => {
+    if (!isAuthenticated) {
+      openLoginDialog();
+      return;
+    }
     try {
       await api.deleteGroup(groupId);
       await fetchData(); // 重新加载数据
@@ -1113,33 +1190,40 @@ function App() {
                       'aria-labelledby': 'navigation-button',
                     }}
                   >
-                    <MenuItem onClick={startGroupSort}>
-                      <ListItemIcon>
-                        <SortIcon fontSize='small' />
-                      </ListItemIcon>
-                      <ListItemText>编辑排序</ListItemText>
-                    </MenuItem>
-                    <MenuItem onClick={handleOpenConfig}>
-                      <ListItemIcon>
-                        <SettingsIcon fontSize='small' />
-                      </ListItemIcon>
-                      <ListItemText>网站设置</ListItemText>
-                    </MenuItem>
-                    <Divider />
-                    <MenuItem onClick={handleExportData}>
-                      <ListItemIcon>
-                        <FileDownloadIcon fontSize='small' />
-                      </ListItemIcon>
-                      <ListItemText>导出数据</ListItemText>
-                    </MenuItem>
-                    <MenuItem onClick={handleOpenImport}>
-                      <ListItemIcon>
-                        <FileUploadIcon fontSize='small' />
-                      </ListItemIcon>
-                      <ListItemText>导入数据</ListItemText>
-                    </MenuItem>
-                    {isAuthenticated && (
+                    {!isAuthenticated ? (
+                      <MenuItem onClick={openLoginDialog}>
+                        <ListItemIcon>
+                          <LoginIcon fontSize='small' />
+                        </ListItemIcon>
+                        <ListItemText>登录</ListItemText>
+                      </MenuItem>
+                    ) : (
                       <>
+                        <MenuItem onClick={() => requireAuth(startGroupSort)}>
+                          <ListItemIcon>
+                            <SortIcon fontSize='small' />
+                          </ListItemIcon>
+                          <ListItemText>编辑排序</ListItemText>
+                        </MenuItem>
+                        <MenuItem onClick={() => requireAuth(handleOpenConfig)}>
+                          <ListItemIcon>
+                            <SettingsIcon fontSize='small' />
+                          </ListItemIcon>
+                          <ListItemText>网站设置</ListItemText>
+                        </MenuItem>
+                        <Divider />
+                        <MenuItem onClick={() => requireAuth(handleExportData)}>
+                          <ListItemIcon>
+                            <FileDownloadIcon fontSize='small' />
+                          </ListItemIcon>
+                          <ListItemText>导出数据</ListItemText>
+                        </MenuItem>
+                        <MenuItem onClick={() => requireAuth(handleOpenImport)}>
+                          <ListItemIcon>
+                            <FileUploadIcon fontSize='small' />
+                          </ListItemIcon>
+                          <ListItemText>导入数据</ListItemText>
+                        </MenuItem>
                         <Divider />
                         <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
                           <ListItemIcon sx={{ color: 'error.main' }}>
@@ -1633,6 +1717,33 @@ function App() {
                 {importLoading ? '导入中...' : '导入'}
               </Button>
             </DialogActions>
+          </Dialog>
+
+          {/* 登录对话框 */}
+          <Dialog
+            open={loginDialogOpen}
+            onClose={closeLoginDialog}
+            maxWidth='sm'
+            fullWidth
+            PaperProps={{
+              sx: {
+                m: { xs: 2, sm: 'auto' },
+                width: { xs: 'calc(100% - 32px)', sm: 'auto' },
+              },
+            }}
+          >
+            <IconButton
+              aria-label='close'
+              onClick={closeLoginDialog}
+              sx={{
+                position: 'absolute',
+                right: 8,
+                top: 8,
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+            <LoginForm onLogin={handleLogin} loading={loginLoading} error={loginError} />
           </Dialog>
 
           {/* GitHub角标 - 在移动端调整位置 */}
